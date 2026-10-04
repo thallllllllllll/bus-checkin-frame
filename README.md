@@ -10,3 +10,7 @@ gives people a browser address that doesn't carry Google's own
 - `hub.html` — the office hub, for signed-in district staff
 
 No student, staff, or district data lives in this repository.
+
+## Home screen (2026-10-03)
+
+`index.html` is home-screen ready: it opens full screen from an iPad home-screen icon, keeps everything dark (no white bounce), and passes its own query through, so `?test=1` opens the kiosk in test mode. The iPad status bar (time, battery) cannot be hidden by any web page. Re-save the home-screen icon from this page after a change to these settings.
