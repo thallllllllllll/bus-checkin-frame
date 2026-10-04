@@ -2,14 +2,32 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Bus Check-In — Kiosk</title>
+<title>Bus Check-In</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- Home-screen app: opens without Safari around it. The status bar (time,
+     battery) cannot be hidden by any web page; black-translucent puts its
+     white text on the kiosk's own dark colour instead. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bus Check-In">
+<meta name="theme-color" content="#0B0E13">
 <style>
-  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #fff; }
-  iframe { position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0; }
+  /* Dark everywhere and nothing to scroll: a bounce, if one survives, shows
+     the kiosk's colour, never white. */
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0B0E13; overscroll-behavior: none; }
+  body { position: fixed; inset: 0; }
+  iframe { position: fixed; left: 0; top: env(safe-area-inset-top, 0px); width: 100%;
+           height: calc(100% - env(safe-area-inset-top, 0px)); border: 0; background: #0B0E13; }
 </style>
 </head>
 <body>
-<iframe src="https://script.google.com/macros/s/AKfycbwl_EX_RXVlrOQ4UkWzO8_EN9g5OI0jtvABo1VMG21SexmqSnhVbbMn4__6yoz7XTt8/exec?app=kiosk" allow="clipboard-write"></iframe>
+<iframe id="k" title="Bus Check-In" allow="autoplay; clipboard-write"></iframe>
+<script>
+  // app=kiosk stays FIRST (Apps Script reads the first value of a repeated
+  // key); anything on this page's own address (?test=1) is passed through.
+  var q = location.search.slice(1);
+  document.getElementById('k').src = 'https://script.google.com/macros/s/AKfycbwl_EX_RXVlrOQ4UkWzO8_EN9g5OI0jtvABo1VMG21SexmqSnhVbbMn4__6yoz7XTt8/exec?app=kiosk' + (q ? '&' + q : '');
+</script>
 </body>
 </html>
