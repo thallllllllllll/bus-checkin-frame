@@ -24,10 +24,32 @@
 <body>
 <iframe id="k" title="Bus Check-In" allow="autoplay; clipboard-write"></iframe>
 <script>
+  // A home-screen web app keeps THIS page's storage when it is closed; the
+  // kiosk's own frame (Google's) loses its storage every time. So this page
+  // keeps the kiosk's device id and its offline check-in queue for it.
+  var DEV_KEY = 'bkDevice', Q_KEY = 'bkQueue';
+  function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function save(k, v) { try { if (v === null) { localStorage.removeItem(k); } else { localStorage.setItem(k, v); } } catch (e) {} }
+  var dev = load(DEV_KEY) || '';
+  if (!/^k[a-z0-9]{4,16}$/.test(dev)) {
+    dev = 'k';
+    while (dev.length < 9) { dev += Math.floor(Math.random() * 36).toString(36); }
+    save(DEV_KEY, dev);
+  }
+  // Only Google's Apps Script frames may read or write the queue.
+  var GOOGLE = /^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/;
+  window.addEventListener('message', function (e) {
+    if (!GOOGLE.test(e.origin) || !e.data || typeof e.data !== 'object' || !e.source) { return; }
+    if (e.data.t === 'ciQueueGet') {
+      e.source.postMessage({ t: 'ciQueue', q: load(Q_KEY) || '[]' }, e.origin);
+    } else if (e.data.t === 'ciQueueSet' && typeof e.data.q === 'string') {
+      save(Q_KEY, e.data.q === '[]' ? null : e.data.q);
+    }
+  });
   // app=kiosk stays FIRST (Apps Script reads the first value of a repeated
   // key); anything on this page's own address (?test=1) is passed through.
   var q = location.search.slice(1);
-  document.getElementById('k').src = 'https://script.google.com/macros/s/AKfycbwl_EX_RXVlrOQ4UkWzO8_EN9g5OI0jtvABo1VMG21SexmqSnhVbbMn4__6yoz7XTt8/exec?app=kiosk' + (q ? '&' + q : '');
+  document.getElementById('k').src = 'https://script.google.com/macros/s/AKfycbwl_EX_RXVlrOQ4UkWzO8_EN9g5OI0jtvABo1VMG21SexmqSnhVbbMn4__6yoz7XTt8/exec?app=kiosk' + (q ? '&' + q : '') + '&dev=' + dev;
 </script>
 </body>
 </html>
