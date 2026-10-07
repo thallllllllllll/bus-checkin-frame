@@ -44,12 +44,18 @@
       e.source.postMessage({ t: 'ciQueue', q: load(Q_KEY) || '[]' }, e.origin);
     } else if (e.data.t === 'ciQueueSet' && typeof e.data.q === 'string') {
       save(Q_KEY, e.data.q === '[]' ? null : e.data.q);
+    } else if (e.data.t === 'reload') {
+      // The kiosk cannot reload itself: Google's inner frame goes blank when it
+      // does. Reloading the whole app from here is the only reload that works.
+      var f = document.getElementById('k');
+      f.src = KIOSK + (KIOSK.indexOf('?') < 0 ? '?' : '&') + 'rl=' + Date.now();
     }
   });
   // app=kiosk stays FIRST (Apps Script reads the first value of a repeated
   // key); anything on this page's own address (?test=1) is passed through.
   var q = location.search.slice(1);
-  document.getElementById('k').src = 'https://script.google.com/macros/s/AKfycbwl_EX_RXVlrOQ4UkWzO8_EN9g5OI0jtvABo1VMG21SexmqSnhVbbMn4__6yoz7XTt8/exec?app=kiosk' + (q ? '&' + q : '') + '&dev=' + dev;
+  var KIOSK = 'https://script.google.com/macros/s/AKfycbwl_EX_RXVlrOQ4UkWzO8_EN9g5OI0jtvABo1VMG21SexmqSnhVbbMn4__6yoz7XTt8/exec?app=kiosk' + (q ? '&' + q : '') + '&dev=' + dev;
+  document.getElementById('k').src = KIOSK;
 </script>
 </body>
 </html>
