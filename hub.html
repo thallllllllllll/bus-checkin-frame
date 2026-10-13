@@ -10,6 +10,21 @@
 </style>
 </head>
 <body>
-<iframe src="https://script.google.com/a/macros/aurorak12.org/s/AKfycbwEAaNbD3wE_o5heRevWecz86g14BKHvt81DI5m-Wv5_dELIoFiWOOoBCaMEZCUr03w/exec" allow="clipboard-write"></iframe>
+<iframe id="d" src="https://script.google.com/a/macros/aurorak12.org/s/AKfycbwEAaNbD3wE_o5heRevWecz86g14BKHvt81DI5m-Wv5_dELIoFiWOOoBCaMEZCUr03w/exec" allow="clipboard-write"></iframe>
+<script>
+  // The dashboard asks this page to reload the whole app when a newer release is
+  // out (its own reload leaves Google's inner frame blank, and it may not navigate
+  // this window by itself). Same request the kiosk wrapper (index.html) answers.
+  // Only Google's Apps Script frames are believed. The address never changes; the
+  // extra "rl" value only makes the frame load it afresh.
+  var DASH = 'https://script.google.com/a/macros/aurorak12.org/s/AKfycbwEAaNbD3wE_o5heRevWecz86g14BKHvt81DI5m-Wv5_dELIoFiWOOoBCaMEZCUr03w/exec';
+  var GOOGLE = /^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/;
+  window.addEventListener('message', function (e) {
+    if (!GOOGLE.test(e.origin) || !e.data || typeof e.data !== 'object') { return; }
+    if (e.data.t === 'reload') {
+      document.getElementById('d').src = DASH + '?rl=' + Date.now();
+    }
+  });
+</script>
 </body>
 </html>
