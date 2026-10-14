@@ -14,3 +14,7 @@ No student, staff, or district data lives in this repository.
 ## Home screen (2026-10-03)
 
 `index.html` is home-screen ready: it opens full screen from an iPad home-screen icon, keeps everything dark (no white bounce), and passes its own query through, so `?test=1` opens the kiosk in test mode. The iPad status bar (time, battery) cannot be hidden by any web page. Re-save the home-screen icon from this page after a change to these settings.
+
+## Names (2026-10-14)
+
+Tab title and bookmark name: `index.html` is "APS-T Check-in Kiosk" and `hub.html` is "APS-T Check-in Dashboard". The kiosk's home-screen label (`apple-mobile-web-app-title`) matches; an iPad icon saved earlier keeps its old label until it is removed and re-saved from this page.
