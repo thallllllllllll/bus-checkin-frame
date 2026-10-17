@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>APS-T Check-in Dashboard STAGING</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #fff; }
+  iframe { position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0; }
+</style>
+</head>
+<body>
+<iframe id="d" title="APS-T Check-in Dashboard STAGING" src="https://script.google.com/a/macros/aurorak12.org/s/AKfycbxWDI-l_Y9QOIqmLtzQrknHQb1SKd_i7-K7rqOE2U9Eu68dzxFxqgBO0k1DfJ6EFJ2T/exec" allow="clipboard-write"></iframe>
+<script>
+  // The dashboard asks this page to reload the whole app when a newer release is
+  // out (its own reload leaves Google's inner frame blank, and it may not navigate
+  // this window by itself). Same request the kiosk wrapper (index.html) answers.
+  // Only Google's Apps Script frames are believed. The address never changes; the
+  // extra "rl" value only makes the frame load it afresh.
+  var DASH = 'https://script.google.com/a/macros/aurorak12.org/s/AKfycbxWDI-l_Y9QOIqmLtzQrknHQb1SKd_i7-K7rqOE2U9Eu68dzxFxqgBO0k1DfJ6EFJ2T/exec';
+  var GOOGLE = /^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/;
+  window.addEventListener('message', function (e) {
+    if (!GOOGLE.test(e.origin) || !e.data || typeof e.data !== 'object') { return; }
+    if (e.data.t === 'reload') {
+      document.getElementById('d').src = DASH + '?rl=' + Date.now();
+    }
+  });
+</script>
+</body>
+</html>

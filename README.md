@@ -18,3 +18,7 @@ No student, staff, or district data lives in this repository.
 ## Names (2026-10-14)
 
 Tab title and bookmark name: `index.html` is "APS-T Check-in Kiosk" and `hub.html` is "APS-T Check-in Dashboard". The kiosk's home-screen label (`apple-mobile-web-app-title`) matches; an iPad icon saved earlier keeps its old label until it is removed and re-saved from this page.
+
+## Staging (2026-10-17)
+
+`staging.html` and `staging-hub.html` are the same two wrappers around the staging copy of the app, used for test runs. `staging.html` keeps its device id and offline queue under its own storage keys, because production and staging share this site address and a staging check-in must never reach a production kiosk. Still no code, no data.
