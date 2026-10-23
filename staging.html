@@ -19,11 +19,40 @@
   body { position: fixed; inset: 0; }
   iframe { position: fixed; left: 0; top: env(safe-area-inset-top, 0px); width: 100%;
            height: calc(100% - env(safe-area-inset-top, 0px)); border: 0; background: #0B0E13; }
+  /* The start-up cover (S19): an exact copy of the kiosk's own #bootShell (kiosk.html), at the iframe's
+     rect, from first paint, over Google's white frames. --u is the kiosk's unit: the iframe's height / 1080
+     (set from the cover's own height by the script below; this is the fallback). Portrait only. It never
+     takes a tap: pointer-events none. Lifted by the script (shell message, or 1.5 s after the first one). */
+  #cover { position: fixed; left: 0; top: env(safe-area-inset-top, 0px); width: 100%;
+           height: calc(100% - env(safe-area-inset-top, 0px)); z-index: 10; overflow: hidden; pointer-events: none;
+           background: #0B0E13; color: #F2F5F8; --u: calc(100vh / 1080);
+           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+  #bootShell { position: absolute; inset: 0; display: flex; flex-direction: column; padding: calc(40 * var(--u)); gap: calc(40 * var(--u)); }
+  #bootShell .bsLeft { display: flex; flex-direction: column; justify-content: space-between; gap: calc(32 * var(--u)); flex: 0 0 auto; }
+  #bootShell .bsWell { flex: 0 0 auto; height: calc(140 * var(--u)); min-height: 110px; background: #05070A;
+    border: 3px solid #2A323F; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
+  #bootShell .bsMsg { font-size: max(28px, calc(40 * var(--u))); font-weight: 600; color: #A9B4C2; letter-spacing: .04em;
+    animation: bootBreathe 2.8s ease-in-out infinite; }
+  #bootShell .bsPad { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: calc(24 * var(--u)); opacity: .35; flex: 1 1 auto; }
+  #bootShell .bsKey { background: #161B24; border: 3px solid #2A323F; border-radius: 12px; }
+  @keyframes bootBreathe { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+  .cvB { position: absolute; pointer-events: none; }
 </style>
 </head>
 <!-- STAGING (go-live piece 4, 2026-10-17): the same wrapper as index.html around the staging copy of the app. -->
 <body>
 <iframe id="k" title="APS-T Check-in Kiosk STAGING" allow="autoplay; clipboard-write"></iframe>
+<div id="cover" aria-hidden="true">
+  <div id="bootShell">
+    <div class="bsLeft"><div class="bsWell"><div class="bsMsg">Starting up…</div></div></div>
+    <div class="bsPad">
+      <div class="bsKey"></div><div class="bsKey"></div><div class="bsKey"></div>
+      <div class="bsKey"></div><div class="bsKey"></div><div class="bsKey"></div>
+      <div class="bsKey"></div><div class="bsKey"></div><div class="bsKey"></div>
+      <div class="bsKey"></div><div class="bsKey"></div><div class="bsKey"></div>
+    </div>
+  </div>
+</div>
 <script>
   // A home-screen web app keeps THIS page's storage when it is closed; the
   // kiosk's own frame (Google's) loses its storage every time. So this page
@@ -41,6 +70,14 @@
   var GOOGLE = /^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/;
   window.addEventListener('message', function (e) {
     if (!GOOGLE.test(e.origin) || !e.data || typeof e.data !== 'object' || !e.source) { return; }
+    // Any message from the kiosk means it is alive: the watchdog stands down and a failed try is forgotten.
+    clearTimeout(dog); tries = 0;
+    if (e.data.t === 'shell' || e.data.t === 'ready') {
+      lift();   // the kiosk's own start-up shell (or its first real screen) is up: lift at once
+    } else if (e.data.t !== 'reload' && !liftT && !cv.hidden) {
+      // Builds that never send 'shell': the first message of any kind starts a short wait, then the lift.
+      liftT = setTimeout(lift, LIFT_MS);
+    }
     if (e.data.t === 'ciQueueGet') {
       e.source.postMessage({ t: 'ciQueue', q: load(Q_KEY) || '[]' }, e.origin);
     } else if (e.data.t === 'ciQueueSet' && typeof e.data.q === 'string') {
@@ -48,14 +85,67 @@
     } else if (e.data.t === 'reload') {
       // The kiosk cannot reload itself: Google's inner frame goes blank when it
       // does. Reloading the whole app from here is the only reload that works.
-      var f = document.getElementById('k');
-      f.src = KIOSK + (KIOSK.indexOf('?') < 0 ? '?' : '&') + 'rl=' + Date.now();
+      raise();   // the cover goes back up BEFORE the address is set
+      reloadFrame();
     }
   });
   // app=kiosk stays FIRST (Apps Script reads the first value of a repeated
   // key); anything on this page's own address (?test=1) is passed through.
   var q = location.search.slice(1);
   var KIOSK = 'https://script.google.com/macros/s/AKfycbxUocAzkKDC1SSXk7SzB0XCs_WMz9en8qO-Kz3R9BhqCykEZ8lMKFbQO7yi-0H7owKC/exec?app=kiosk' + (q ? '&' + q : '') + '&dev=' + dev;
+  function reloadFrame() {
+    var f = document.getElementById('k');
+    f.src = KIOSK + (KIOSK.indexOf('?') < 0 ? '?' : '&') + 'rl=' + Date.now();
+  }
+
+  // ---- the start-up cover (S19) ----------------------------------------------------------------
+  var LIFT_MS = 1500, DOG_MS = 25000;
+  var cv = document.getElementById('cover'), shell = cv.firstElementChild;
+  var liftT = 0, dog = 0, gT = 0, tries = 0;
+  function fit() { if (cv.clientHeight) { cv.style.setProperty('--u', (cv.clientHeight / 1080) + 'px'); } }
+  window.addEventListener('resize', fit);
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+  // The same four small glitches the kiosk runs on its own shell while it loads, every 0.9 to 2.6 s.
+  function block(life) {
+    var d = document.createElement('div'), k = cv.clientWidth / 200;
+    d.className = 'cvB';
+    d.style.cssText = 'left:' + rnd(0, 190) * k + 'px;top:' + rnd(0, 262) * k + 'px;width:' + rnd(5, 40) * k + 'px;height:' +
+      [2, 2, 3, 4, 6, 8][Math.floor(rnd(0, 6))] * k + 'px;background:' + ['#5EA8FF', '#F87171', '#E3F225', '#86EFAC', '#F2F5F8'][Math.floor(rnd(0, 5))] + ';opacity:' + rnd(.5, 1).toFixed(2);
+    cv.appendChild(d);
+    setTimeout(function () { if (d.parentNode) { d.parentNode.removeChild(d); } }, life);
+  }
+  function glitch() {
+    var c = Math.floor(rnd(0, 4)), well = shell.querySelector('.bsWell'), keys = shell.querySelectorAll('.bsKey');
+    if (c === 0) {
+      shell.style.filter = 'drop-shadow(-2px 0 rgba(248,113,113,.8)) drop-shadow(2px 0 rgba(94,168,255,.8))'; well.style.transform = 'translateX(2px)';
+      setTimeout(function () { shell.style.filter = ''; well.style.transform = ''; }, 70);
+    } else if (c === 1) { block(60); block(50); }
+    else if (c === 2) { shell.style.filter = 'brightness(.35)'; setTimeout(function () { shell.style.filter = ''; }, 45); }
+    else {
+      var key = keys[Math.floor(rnd(0, keys.length))];
+      key.style.borderColor = '#5EA8FF';
+      setTimeout(function () { key.style.borderColor = ''; }, 80);
+    }
+    gT = setTimeout(glitch, rnd(900, 2600));
+  }
+  // Up (first paint, and again on a reload request). The watchdog: no message from the kiosk in 25 s
+  // reloads the frame once; the second silence lifts the cover and leaves what is there.
+  function raise() {
+    clearTimeout(liftT); liftT = 0; clearTimeout(gT); clearTimeout(dog);
+    cv.hidden = false; cv.style.transition = 'none'; cv.style.opacity = 1; fit();
+    gT = setTimeout(glitch, rnd(400, 900));
+    dog = setTimeout(woof, DOG_MS);
+  }
+  function lift() {
+    clearTimeout(liftT); liftT = 0; clearTimeout(gT); clearTimeout(dog);
+    if (cv.hidden) { return; }
+    cv.style.transition = 'opacity 120ms linear'; cv.style.opacity = 0;
+    setTimeout(function () { if (cv.style.opacity === '0') { cv.hidden = true; } }, 150);
+  }
+  function woof() {
+    if (tries++ === 0) { reloadFrame(); dog = setTimeout(woof, DOG_MS); } else { tries = 0; lift(); }
+  }
+  raise();
   document.getElementById('k').src = KIOSK;
 </script>
 </body>
